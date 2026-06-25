@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # Run CI tests before releasing
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  # Create release only if CI passes
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build and Package Library
+        run: |
+          TAG_NAME=${{ steps.version.outputs.VERSION }}
+          zip -r "tps26750_multiplatform-${TAG_NAME}.zip" src include examples library.json library.properties LICENSE.txt README.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "TPS26750 Library ${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## TPS26750 USB Type-C Power Delivery Controller Library ${{ steps.version.outputs.VERSION }}
+
+            C++ library for controlling the TI TPS26750 USB-PD controller via I2C.
+
+            ### Supported Platforms
+            - Arduino / ESP32 (Wire)
+            - STM32 (STM32duino & HAL)
+            - RP2040 (Arduino core or Pico SDK)
+
+            ### Usage Model
+            - Pass the active bus handle directly to the constructor (`&Wire`, `&hi2c1`, `i2c0`)
+            - Use 7-bit I2C device addresses on every platform
+
+            ### Installation
+
+            #### PlatformIO
+            Add to your `platformio.ini`:
+            ```ini
+            lib_deps =
+                https://github.com/theohg/tps26750_multiplatform.git#${{ steps.version.outputs.VERSION }}
+            ```
+
+            Or download the zip and place in your project's `lib/` directory.
+
+            #### Arduino IDE
+            1. Download `tps26750_multiplatform-${{ steps.version.outputs.VERSION }}.zip`
+            2. In Arduino IDE: Sketch → Include Library → Add .ZIP Library
+            3. Select the downloaded zip file
+
+            ### Examples
+            - `pd_status_monitor` - Mode, connection status, and active PD contract monitoring
+            - `source_capabilities` - Enumerate the source's Fixed/PPS/AVS power profiles
+
+            See the `examples/` folder for complete code.
+
+            ### Documentation
+            Full documentation at https://github.com/${{ github.repository }}
+          files: |
+            tps26750_multiplatform-*.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

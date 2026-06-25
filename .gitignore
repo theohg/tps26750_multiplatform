@@ -1,0 +1,8 @@
+.DS_Store
+.pio/
+.idea/
+.vscode/
+build/
+CMakeFiles/
+CMakeCache.txt
+*.log
