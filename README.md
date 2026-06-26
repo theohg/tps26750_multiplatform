@@ -7,6 +7,8 @@
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-compatible-brightgreen)
 ![Language](https://img.shields.io/badge/C%2B%2B-11-blue)
 
+> ⚡ **Featured in [PD240W](https://github.com/theohg/PD240W)** — an open-source USB-C bench supply that negotiates USB Power Delivery 3.1 EPR into a programmable 240 W (48 V / 5 A) output. This library drives its PD controller.
+
 A C++ library for controlling the **[TPS26750](https://www.ti.com/product/TPS26750)** USB Type-C Power Delivery controller from Texas Instruments via I2C. It supports Arduino, ESP32, STM32, and RP2040 targets and uses a per-instance bus handle so multiple buses or devices can be used without global transport state.
 
 ## Features
