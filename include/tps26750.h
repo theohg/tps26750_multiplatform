@@ -42,6 +42,15 @@
 #define TPS26750_STATUS_VBUS_SAFE5V        (0x100000)
 #define TPS26750_STATUS_VBUS_VALID         (0x200000)
 
+// --- POWER_STATUS Register (0x3F) Masks ---
+#define TPS26750_PWR_STATUS_CONNECTION      (1 << 0)    // 1 = power connection present
+#define TPS26750_PWR_STATUS_SOURCE_SINK     (1 << 1)    // 0 = sinking, 1 = sourcing
+#define TPS26750_PWR_STATUS_TYPEC_CURR_MASK (0x0C)      // Bits 3-2: advertised Type-C current
+#define TPS26750_PWR_STATUS_TYPEC_USB_DEF   (0x00)      // 00b USB default (Rp-default)
+#define TPS26750_PWR_STATUS_TYPEC_1_5A      (0x04)      // 01b 1.5A @ 5V (Rp-1.5A)
+#define TPS26750_PWR_STATUS_TYPEC_3_0A      (0x08)      // 10b 3.0A @ 5V (Rp-3.0A)
+#define TPS26750_PWR_STATUS_TYPEC_PD        (0x0C)      // 11b PD contract negotiated
+
 // --- POWER_PATH_STATUS Register (0x26) Masks ---
 #define TPS26750_PP_STATUS_PP_CABLE1_SW_MASK (0x03)
 #define TPS26750_PP_STATUS_PP1_SWITCH_MASK   (0x1C0)         // Bits 8-6 (5V Path)
@@ -211,6 +220,15 @@ public:
      * @return true if read successful.
      */
     bool getStatus(uint8_t* status_buf);
+
+    /**
+     * @brief Read the POWER_STATUS register.
+     * @details Exposes the advertised Type-C current (Rp level) used to estimate
+     *          available power from non-PD (Type-C only) sources.
+     * @param status_buf Buffer of at least 2 bytes to store status.
+     * @return true if read successful.
+     */
+    bool getPowerStatus(uint8_t* status_buf);
 
     /**
      * @brief Send a GPPI message and read the resulting message buffer.

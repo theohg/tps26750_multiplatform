@@ -1,6 +1,6 @@
 {
     "name": "tps26750_multiplatform",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "C++ library for the TI TPS26750 USB Type-C Power Delivery controller",
     "keywords": [
         "usb-pd",

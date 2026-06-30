@@ -393,6 +393,12 @@ bool TPS26750::getStatus(uint8_t* status_buf)
     return readRegister(TPS26750_REG_STATUS, status_buf, 5);
 }
 
+bool TPS26750::getPowerStatus(uint8_t* status_buf)
+{
+    // POWER_STATUS (0x3F) reports the advertised Type-C current (Rp level).
+    return readRegister(TPS26750_REG_POWER_STATUS, status_buf, 2);
+}
+
 bool TPS26750::waitForCommandClear(uint32_t timeout_ms)
 {
     uint32_t start = platformMillis();
