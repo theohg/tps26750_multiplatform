@@ -240,6 +240,11 @@ bool TPS26750::readRegister(uint8_t reg, uint8_t* dest, uint8_t len)
         return false;
     }
 
+    // A short read (device reported fewer bytes than requested) would otherwise
+    // leave the tail of dest uninitialized. Zero dest first so callers that don't
+    // check the count never read stale stack.
+    memset(dest, 0, len);
+
     // Copy the minimum of what we asked for vs what the device said it sent.
     uint8_t bytesToCopy = (bytesReturned < len) ? bytesReturned : len;
     memcpy(dest, &tempBuffer[1], bytesToCopy);
@@ -327,6 +332,12 @@ bool TPS26750::isInterruptSet(const uint8_t* buffer, uint8_t bitIndex)
 
 bool TPS26750::getActiveContract(uint32_t& voltage_mv, uint32_t& current_ma)
 {
+    // Default the out-params so a reserved/unknown APDO type (e.g. 0x03) that
+    // matches neither the AVS nor PPS branch below returns 0/0 rather than
+    // leaving the caller's variables unassigned.
+    voltage_mv = 0;
+    current_ma = 0;
+
     uint8_t pdoBuf[6] = {0};
     uint8_t rdoBuf[4] = {0};
 
