@@ -10,6 +10,21 @@
 
 #include "tps26750_platform_i2c.h"
 
+#ifdef TPS26750_PLATFORM_RP2040
+// Per-transaction I2C timeout for the RP2040 path. A blocking transfer hangs
+// forever if a slave clock-stretches indefinitely or the bus locks up; bounding
+// it lets the failure propagate through the existing bool returns instead of
+// freezing the caller's loop. 5 ms is generous at 400 kHz (each byte ~22.5 us).
+#define TPS26750_RP2040_I2C_TIMEOUT_US 5000u
+#endif
+
+#ifdef TPS26750_PLATFORM_STM32
+// Per-transaction I2C timeout (ms) for the STM32 HAL path. HAL_MAX_DELAY blocks
+// forever on the same clock-stretch/bus-lockup failures the RP2040 bound above
+// guards against; 5 ms mirrors that bound so the failure propagates instead.
+#define TPS26750_STM32_I2C_TIMEOUT_MS 5u
+#endif
+
 /**
  * @brief Check whether a TPS26750 acknowledges its address on the bus.
  * @param bus The bus handle to use.
@@ -26,10 +41,10 @@ bool tps26750_i2c_probe(bus_handle_t bus, uint8_t device_address)
     bus->beginTransmission(device_address);
     return bus->endTransmission() == 0;
 #elif defined(TPS26750_PLATFORM_STM32)
-    return HAL_I2C_IsDeviceReady(bus, (uint16_t)(device_address << 1), 1, HAL_MAX_DELAY) == HAL_OK;
+    return HAL_I2C_IsDeviceReady(bus, (uint16_t)(device_address << 1), 1, TPS26750_STM32_I2C_TIMEOUT_MS) == HAL_OK;
 #elif defined(TPS26750_PLATFORM_RP2040)
     uint8_t reg = 0;
-    return i2c_write_blocking(bus, device_address, &reg, 1, false) == 1;
+    return i2c_write_timeout_us(bus, device_address, &reg, 1, false, TPS26750_RP2040_I2C_TIMEOUT_US) == 1;
 #else
     (void)device_address;
     return false;
@@ -55,9 +70,9 @@ bool tps26750_i2c_write(bus_handle_t bus, uint8_t device_address, const uint8_t*
     bus->write(data, length);
     return bus->endTransmission() == 0;
 #elif defined(TPS26750_PLATFORM_STM32)
-    return HAL_I2C_Master_Transmit(bus, (uint16_t)(device_address << 1), (uint8_t*)data, (uint16_t)length, HAL_MAX_DELAY) == HAL_OK;
+    return HAL_I2C_Master_Transmit(bus, (uint16_t)(device_address << 1), (uint8_t*)data, (uint16_t)length, TPS26750_STM32_I2C_TIMEOUT_MS) == HAL_OK;
 #elif defined(TPS26750_PLATFORM_RP2040)
-    return i2c_write_blocking(bus, device_address, data, length, false) == (int)length;
+    return i2c_write_timeout_us(bus, device_address, data, length, false, TPS26750_RP2040_I2C_TIMEOUT_US) == (int)length;
 #else
     (void)device_address;
     (void)data;
@@ -104,13 +119,13 @@ bool tps26750_i2c_write_read(bus_handle_t bus, uint8_t device_address, uint8_t r
     }
     return true;
 #elif defined(TPS26750_PLATFORM_STM32)
-    return HAL_I2C_Mem_Read(bus, (uint16_t)(device_address << 1), reg, I2C_MEMADD_SIZE_8BIT, dest, (uint16_t)length, HAL_MAX_DELAY) == HAL_OK;
+    return HAL_I2C_Mem_Read(bus, (uint16_t)(device_address << 1), reg, I2C_MEMADD_SIZE_8BIT, dest, (uint16_t)length, TPS26750_STM32_I2C_TIMEOUT_MS) == HAL_OK;
 #elif defined(TPS26750_PLATFORM_RP2040)
-    if (i2c_write_blocking(bus, device_address, &reg, 1, true) != 1)
+    if (i2c_write_timeout_us(bus, device_address, &reg, 1, true, TPS26750_RP2040_I2C_TIMEOUT_US) != 1)
     {
         return false;
     }
-    return i2c_read_blocking(bus, device_address, dest, length, false) == (int)length;
+    return i2c_read_timeout_us(bus, device_address, dest, length, false, TPS26750_RP2040_I2C_TIMEOUT_US) == (int)length;
 #else
     (void)device_address;
     (void)reg;
